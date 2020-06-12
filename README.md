@@ -27,3 +27,14 @@ or you can add it to `java.security` as
 security.provider.N=SwiftRNG
 ```
 where `N` should be the value of the last provider incremented by `1`.
+
+You can also select one or more devices that this code should use.
+For example we would like to use SwiftRNG that attached as `/dev/cu.usbmodemSWRNGP000A0061` we can do:
+```
+SecureRandom random = SecureRandom.getInstance("SwiftRNG", new SwiftRNGParameters(Collections.singletonList("/dev/cu.usbmodemSWRNGP000A0061")));
+```
+or you can specified at `java.security` comma separated list of used devices such as:
+```
+securerandom.swiftrng.devices=/dev/cu.usbmodemSWRNGP000A0061,/dev/cu.usbmodemSWRNGP000A0062
+```
+and this is the only way to use this provider at Windows where you can get path to the device by `mode`.

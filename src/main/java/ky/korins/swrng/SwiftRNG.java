@@ -1,15 +1,44 @@
 package ky.korins.swrng;
 
 import java.io.IOException;
-import java.security.ProviderException;
-import java.security.SecureRandomSpi;
+import java.security.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 public class SwiftRNG extends SecureRandomSpi {
 
-    SwiftRNGDevices devices;
+    private SwiftRNGDevices devices;
+
+    private static final String PROP_NAME = "securerandom.swiftrng.devices";
 
     public SwiftRNG() throws IOException {
-        devices = SwiftRNGDevices.openAllDevices();
+        this(null);
+    }
+
+    public SwiftRNG(SecureRandomParameters params) throws IOException {
+        super(params);
+        List<String> specifiedDevices = new LinkedList<>();
+
+        String config = AccessController.doPrivileged((PrivilegedAction<String>)
+                () -> Security.getProperty(PROP_NAME));
+        if (config != null && !config.isEmpty()) {
+            specifiedDevices.addAll(Arrays.asList(config.split(",")));
+        }
+
+        if (params != null) {
+            if (params instanceof SwiftRNGParameters) {
+                specifiedDevices.addAll(((SwiftRNGParameters) params).getSpecifiedDevices());
+            } else {
+                throw new IllegalArgumentException("Unsupported params: " + params.getClass());
+            }
+        }
+
+        if (specifiedDevices.isEmpty()) {
+            specifiedDevices.addAll(SwiftRNGDevices.scanDevices());
+        }
+
+        devices = new SwiftRNGDevices(specifiedDevices);
     }
 
     @Override

@@ -9,8 +9,8 @@ import java.util.List;
 public class SwiftRNGDevices {
     public List<SwiftRNGDevice> devices;
 
-    public SwiftRNGDevices(String... paths) throws IOException {
-        if (paths.length == 0) {
+    public SwiftRNGDevices(List<String> paths) throws IOException {
+        if (paths.isEmpty()) {
             throw new SwiftRNGException("At least one device should be specified");
         }
 
@@ -56,9 +56,5 @@ public class SwiftRNGDevices {
         }
 
         return devices;
-    }
-
-    public static SwiftRNGDevices openAllDevices() throws IOException {
-        return new SwiftRNGDevices(scanDevices().toArray(new String[0]));
     }
 }
