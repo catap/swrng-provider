@@ -3,7 +3,6 @@ package ky.korins.swrng;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -40,7 +39,8 @@ public class SwiftRNGDevice implements Closeable {
     private final String path;
 
     private final RandomAccessFile usbSerialDevice;
-    private final FileChannel usbSerialDeviceChannel;
+    private final ReentrantLock usbSerialDeviceLock = new ReentrantLock();
+    private final FileLock usbSerialDeviceFileLock;
 
     private final String model;
 
@@ -56,32 +56,27 @@ public class SwiftRNGDevice implements Closeable {
     public SwiftRNGDevice(String path) throws IOException {
         this.path = path;
         usbSerialDevice = new RandomAccessFile(path, "rw");
-        usbSerialDeviceChannel = usbSerialDevice.getChannel();
+        usbSerialDeviceFileLock = usbSerialDevice.getChannel().lock();
         model = new String(execute(Command.MODEL));
         version = new String(execute(Command.VERSION));
         serialNumber = new String(execute(Command.SERIAL_NUMBER));
     }
 
     private void execute(Command cmd, byte[] b, int off) throws IOException {
-        for (;;) {
-            FileLock lock = usbSerialDeviceChannel.tryLock();
-            if (lock != null) {
-                try {
-                    int p = 0;
-                    usbSerialDevice.write(cmd.cmd);
-                    while (p < cmd.responseSize) {
-                        p += usbSerialDevice.read(b, p + off, cmd.responseSize - p);
-                    }
-                    byte status = usbSerialDevice.readByte();
-                    if (status != 0) {
-                        throw new SwiftRNGException("Unexpected status byte: " + status);
-                    }
-                    return;
-                } finally {
-                    lock.release();
-                }
+        usbSerialDeviceLock.lock();
+        try {
+            int p = 0;
+            usbSerialDevice.write(cmd.cmd);
+            while (p < cmd.responseSize) {
+                p += usbSerialDevice.read(b, p + off, cmd.responseSize - p);
             }
-            Thread.onSpinWait();
+            byte status = usbSerialDevice.readByte();
+            if (status != 0) {
+                throw new SwiftRNGException("Unexpected status byte: " + status);
+            }
+            return;
+        } finally {
+            usbSerialDeviceLock.unlock();
         }
     }
 
@@ -93,6 +88,7 @@ public class SwiftRNGDevice implements Closeable {
 
     @Override
     public void close() throws IOException {
+        usbSerialDeviceFileLock.close();
         usbSerialDevice.close();
     }
 

@@ -38,3 +38,6 @@ or you can specified at `java.security` comma separated list of used devices suc
 securerandom.swiftrng.devices=/dev/cu.usbmodemSWRNGP000A0061,/dev/cu.usbmodemSWRNGP000A0062
 ```
 and this is the only way to use this provider at Windows where you can get path to the device by `mode`.
+
+Thus, this code is using locking to prevent parallel using the device and this add limitation
+ that only one `SecureRandom` instance can be created per device that is thread safe.
