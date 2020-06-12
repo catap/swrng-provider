@@ -10,7 +10,7 @@ To use it you should add this provider to dependency like
 <dependency>
   <groupId>ky.korins</groupId>
   <artifactId>swrng-provider</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
 </dependency>
 ```
 and use via specified instance:
