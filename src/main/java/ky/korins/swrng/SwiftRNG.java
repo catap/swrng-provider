@@ -20,13 +20,7 @@ public class SwiftRNG extends SecureRandomSpi {
     @Override
     protected void engineNextBytes(byte[] bytes) {
         try {
-            int p = 0;
-            do {
-                byte[] next = devices.getRandomBytes();
-                int used = Math.min(bytes.length - p, next.length);
-                System.arraycopy(next, 0, bytes, p, used);
-                p += used;
-            } while (p < bytes.length);
+            devices.getRandomBytes(bytes, 0, bytes.length);
         } catch (IOException e) {
             throw new ProviderException("Can't obtain next bytes: " + e.getMessage(), e);
         }

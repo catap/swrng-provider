@@ -21,18 +21,18 @@ public class SwiftRNGDevices {
         }
     }
 
-    public byte[] getRandomBytes() throws IOException {
+    public void getRandomBytes(byte[] b, int off, int len) throws IOException {
         if (devices.size() == 1) {
-            return devices.get(0).getRandomBytes();
-        }
-        byte[] result = new byte[SwiftRNGDevice.RANDOM_BYTES_CHUNK];
-        for (SwiftRNGDevice device : devices) {
-            byte[] next = device.getRandomBytes();
-            for (int i = 0; i < SwiftRNGDevice.RANDOM_BYTES_CHUNK; i++) {
-                result[i] ^= next[i];
+            devices.get(0).getRandomBytes(b, off, len);
+        } else {
+            byte[] next = new byte[len];
+            for (SwiftRNGDevice device : devices) {
+                device.getRandomBytes(next, 0, len);
+                for (int i = 0; i < len; i++) {
+                    b[i + off] ^= next[i];
+                }
             }
         }
-        return result;
     }
 
     public static List<String> scanDevices() throws IOException {

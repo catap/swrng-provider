@@ -2,6 +2,7 @@ package ky.korins.swrng;
 
 import junit.framework.TestCase;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
