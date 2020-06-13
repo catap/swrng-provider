@@ -3,7 +3,8 @@
 A `SecureRandomSPI` that makes SwiftRNG devices available to `SecureRandom`.
 
 This code automatically detect attached devices on Linux and macOS,
-and when a machine has more of one SwiftRNG it makes XOR between bytes.
+ and when a machine has more of one SwiftRNG it uses round-robin algorithm
+ to balance `getRandomBytes` calls between devices.
 
 To use it you should add this provider to dependency like
 ```

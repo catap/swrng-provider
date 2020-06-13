@@ -7,32 +7,25 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class SwiftRNGDevices {
-    public List<SwiftRNGDevice> devices;
+    private final SwiftRNGDevice[] devices;
+
+    private volatile int index = 0;
 
     public SwiftRNGDevices(List<String> paths) throws IOException {
         if (paths.isEmpty()) {
             throw new SwiftRNGException("At least one device should be specified");
         }
 
-        devices = new LinkedList<>();
+        List<SwiftRNGDevice> devices = new LinkedList<>();
         for (String path : paths) {
             SwiftRNGDevice device = new SwiftRNGDevice(path);
             devices.add(device);
         }
+        this.devices = devices.toArray(new SwiftRNGDevice[0]);
     }
 
     public void getRandomBytes(byte[] b, int off, int len) throws IOException {
-        if (devices.size() == 1) {
-            devices.get(0).getRandomBytes(b, off, len);
-        } else {
-            byte[] next = new byte[len];
-            for (SwiftRNGDevice device : devices) {
-                device.getRandomBytes(next, 0, len);
-                for (int i = 0; i < len; i++) {
-                    b[i + off] ^= next[i];
-                }
-            }
-        }
+        devices[index++ % devices.length].getRandomBytes(b, off, len);
     }
 
     public static List<String> scanDevices() throws IOException {
