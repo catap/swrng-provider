@@ -57,4 +57,10 @@ public class SwiftRNGDevices {
 
         return devices;
     }
+
+    public static void main(String[] args) throws IOException {
+        for (String path : scanDevices()) {
+            System.out.println(new SwiftRNGDevice(path));
+        }
+    }
 }

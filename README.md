@@ -41,3 +41,10 @@ and this is the only way to use this provider at Windows where you can get path 
 
 Thus, this code is using locking to prevent parallel using the device and this add limitation
  that only one `SecureRandom` instance can be created per device that is thread safe.
+
+You also can test your configuration by running a `main` method from `ky.korins.swrng.SwiftRNGDevices`
+ that returns all found devices like that
+```
+SwiftRNGDevice{path=/dev/cu.usbmodemSWRNGP000A0061, model='SWRNGPRO', version='V2.1', serialNumber='XXX'}
+SwiftRNGDevice{path=/dev/cu.usbmodemSWRNGP000A0062, model='SWRNGPRO', version='V2.1', serialNumber='XXX'}
+```
