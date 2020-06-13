@@ -68,6 +68,7 @@ public class SwiftRNGDevice implements Closeable {
             int p = 0;
             usbSerialDevice.write(cmd.cmd);
             while (p < cmd.responseSize) {
+                usbSerialDevice.getFD().sync();
                 p += usbSerialDevice.read(b, p + off, cmd.responseSize - p);
             }
             byte status = usbSerialDevice.readByte();
