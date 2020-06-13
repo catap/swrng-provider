@@ -1,14 +1,23 @@
 package ky.korins.swrng;
 
+import purejavacomm.*;
+
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SwiftRNGDevice implements Closeable {
 
+    // constants are similar with swrngapi.cpp v1.2
     public static final int RANDOM_BYTES_CHUNK = 16000;
+
+    private static final int READ_TIMEOUT_MILLIS = 100;
+    private static final int EXECUTE_TIMEOUT_MILLIS = 2 * 1000 * 1000;
+
+    private static final int CLEANUP_ITERATIONS = 3;
+    private static final int EXECUTE_RETRY_COUNT = 15;
 
     enum Command {
         MODEL('m', 8),
@@ -23,13 +32,13 @@ public class SwiftRNGDevice implements Closeable {
 
         DIAGNOSTICS('d', 0);
 
-        final byte cmd;
+        final char cmd;
         final int responseSize;
         final byte[] bufferedEntropy;
         final int bufferedEntropyPos;
 
         Command(char cmd, int responseSize) {
-            this.cmd = (byte) cmd;
+            this.cmd = cmd;
             this.responseSize = responseSize;
             bufferedEntropy = new byte[responseSize];
             bufferedEntropyPos = responseSize;
@@ -38,9 +47,11 @@ public class SwiftRNGDevice implements Closeable {
 
     private final String path;
 
-    private final RandomAccessFile usbSerialDevice;
+    private final CommPort usbSerialDevice;
+    private final InputStream in;
+    private final OutputStream out;
+
     private final ReentrantLock usbSerialDeviceLock = new ReentrantLock();
-    private final FileLock usbSerialDeviceFileLock;
 
     private final String model;
 
@@ -55,8 +66,23 @@ public class SwiftRNGDevice implements Closeable {
 
     public SwiftRNGDevice(String path) throws IOException {
         this.path = path;
-        usbSerialDevice = new RandomAccessFile(path, "rws");
-        usbSerialDeviceFileLock = usbSerialDevice.getChannel().lock();
+        try {
+            usbSerialDevice = CommPortIdentifier
+                    .getPortIdentifier(path)
+                    .open("SwiftRNGDevice", READ_TIMEOUT_MILLIS);
+        } catch (NoSuchPortException e) {
+            throw new SwiftRNGException("Device not found: " + path);
+        } catch (PortInUseException e) {
+            throw new SwiftRNGException("Someone used device: " + path);
+        }
+        try {
+            usbSerialDevice.enableReceiveTimeout(READ_TIMEOUT_MILLIS);
+        } catch (UnsupportedCommOperationException e) {
+            throw new SwiftRNGException("Can't setup timeout to device: " + path);
+        }
+        in = usbSerialDevice.getInputStream();
+        out = usbSerialDevice.getOutputStream();
+        cleanup();
         model = new String(execute(Command.MODEL));
         version = new String(execute(Command.VERSION));
         serialNumber = new String(execute(Command.SERIAL_NUMBER));
@@ -64,21 +90,43 @@ public class SwiftRNGDevice implements Closeable {
         selfDiagnostics();
     }
 
-    private void execute(final byte cmd, int responseSize, byte[] b, int off) throws IOException {
+    private void cleanup() throws IOException {
+        for (int i = 0; i < CLEANUP_ITERATIONS; i++) {
+            while (in.read(buffer) > 0) ;
+        }
+    }
+
+    private void execute(final char cmd, int responseSize, byte[] b, int off) throws IOException {
+        int i = 0;
         usbSerialDeviceLock.lock();
         try {
-            usbSerialDevice.write(cmd);
-            while (responseSize > 0) {
-                int r = usbSerialDevice.read(b, off, responseSize);
-                if (r <= 0) {
-                    throw new SwiftRNGException("Read from SwiftRNG returns " + r);
+            while (true) {
+                try {
+                    out.write(cmd);
+                    long started = System.currentTimeMillis();
+                    while (responseSize > 0) {
+                        long spent = System.currentTimeMillis() - started;
+                        if (spent > EXECUTE_TIMEOUT_MILLIS) {
+                            throw new SwiftRNGException("Timeout happened at execution command '" + cmd + "' after " + spent + "ms");
+                        }
+                        int r = in.read(b, off, responseSize);
+                        if (r < 0) {
+                            throw new SwiftRNGException("Read from SwiftRNG returns " + r);
+                        }
+                        responseSize -= r;
+                        off += r;
+                    }
+                    int status = in.read();
+                    if (status != 0) {
+                        throw new SwiftRNGException("Unexpected status: " + status);
+                    }
+                    return;
+                } catch (Exception e) {
+                    if (++i >= EXECUTE_RETRY_COUNT) {
+                        throw e;
+                    }
+                    cleanup();
                 }
-                responseSize -= r;
-                off += r;
-            }
-            byte status = usbSerialDevice.readByte();
-            if (status != 0) {
-                throw new SwiftRNGException("Unexpected status byte: " + status);
             }
         } finally {
             usbSerialDeviceLock.unlock();
@@ -97,7 +145,6 @@ public class SwiftRNGDevice implements Closeable {
 
     @Override
     public void close() throws IOException {
-        usbSerialDeviceFileLock.close();
         usbSerialDevice.close();
     }
 
@@ -113,7 +160,7 @@ public class SwiftRNGDevice implements Closeable {
         if (profile < 0 || profile > 9) {
             throw new IllegalArgumentException("Unsupported power profile: " + profile);
         }
-        execute((byte) ('0' + profile), 0, null, 0);
+        execute((char) ('0' + profile), 0, null, 0);
     }
 
     public byte[] getRandomBytes() throws IOException {
