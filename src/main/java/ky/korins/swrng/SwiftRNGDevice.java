@@ -60,15 +60,21 @@ public class SwiftRNGDevice implements Closeable {
         model = new String(execute(Command.MODEL));
         version = new String(execute(Command.VERSION));
         serialNumber = new String(execute(Command.SERIAL_NUMBER));
+        setPowerProfile(9);
+        selfDiagnostics();
     }
 
-    private void execute(Command cmd, byte[] b, int off) throws IOException {
+    private void execute(final byte cmd, int responseSize, byte[] b, int off) throws IOException {
         usbSerialDeviceLock.lock();
         try {
-            int p = 0;
-            usbSerialDevice.write(cmd.cmd);
-            while (p < cmd.responseSize) {
-                p += usbSerialDevice.read(b, p + off, cmd.responseSize - p);
+            usbSerialDevice.write(cmd);
+            while (responseSize > 0) {
+                int r = usbSerialDevice.read(b, off, responseSize);
+                if (r <= 0) {
+                    throw new SwiftRNGException("Read from SwiftRNG returns " + r);
+                }
+                responseSize -= r;
+                off += r;
             }
             byte status = usbSerialDevice.readByte();
             if (status != 0) {
@@ -79,9 +85,13 @@ public class SwiftRNGDevice implements Closeable {
         }
     }
 
+    private void execute(Command cmd, byte[] b, int off) throws IOException {
+        execute(cmd.cmd, cmd.responseSize, b, off);
+    }
+
     private byte[] execute(Command cmd) throws IOException {
         byte[] response = new byte[cmd.responseSize];
-        execute(cmd, response, 0);
+        execute(cmd.cmd, cmd.responseSize, response, 0);
         return response;
     }
 
@@ -97,6 +107,13 @@ public class SwiftRNGDevice implements Closeable {
 
     public void selfDiagnostics() throws IOException {
         execute(Command.DIAGNOSTICS);
+    }
+
+    public void setPowerProfile(int profile) throws IOException {
+        if (profile < 1 || profile > 9) {
+            throw new IllegalArgumentException("Unsupported power profile: " + profile);
+        }
+        execute((byte) ('0' + profile), 0, null, 0);
     }
 
     public byte[] getRandomBytes() throws IOException {
