@@ -55,7 +55,7 @@ public class SwiftRNGDevice implements Closeable {
 
     public SwiftRNGDevice(String path) throws IOException {
         this.path = path;
-        usbSerialDevice = new RandomAccessFile(path, "rw");
+        usbSerialDevice = new RandomAccessFile(path, "rws");
         usbSerialDeviceFileLock = usbSerialDevice.getChannel().lock();
         model = new String(execute(Command.MODEL));
         version = new String(execute(Command.VERSION));
@@ -68,14 +68,12 @@ public class SwiftRNGDevice implements Closeable {
             int p = 0;
             usbSerialDevice.write(cmd.cmd);
             while (p < cmd.responseSize) {
-                usbSerialDevice.getFD().sync();
                 p += usbSerialDevice.read(b, p + off, cmd.responseSize - p);
             }
             byte status = usbSerialDevice.readByte();
             if (status != 0) {
                 throw new SwiftRNGException("Unexpected status byte: " + status);
             }
-            return;
         } finally {
             usbSerialDeviceLock.unlock();
         }
