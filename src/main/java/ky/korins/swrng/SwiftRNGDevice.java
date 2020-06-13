@@ -110,7 +110,7 @@ public class SwiftRNGDevice implements Closeable {
     }
 
     public void setPowerProfile(int profile) throws IOException {
-        if (profile < 1 || profile > 9) {
+        if (profile < 0 || profile > 9) {
             throw new IllegalArgumentException("Unsupported power profile: " + profile);
         }
         execute((byte) ('0' + profile), 0, null, 0);
