@@ -11,7 +11,7 @@ To use it you should add this provider to dependency like
 <dependency>
   <groupId>ky.korins</groupId>
   <artifactId>swrng-provider</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 and use via specified instance:
