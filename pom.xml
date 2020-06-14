@@ -5,21 +5,22 @@
   <artifactId>swrng-provider</artifactId>
   <packaging>jar</packaging>
   <version>1.0.0</version>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-        <configuration>
-          <source>9</source>
-          <target>9</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <name>swrng-provider</name>
   <url>https://github.com/catap/swrng-provider</url>
+  <description>
+    A SecureRandomSPI that makes SwiftRNG devices available to SecureRandom.
+  </description>
+  <licenses>
+    <license>
+      <name>The Unlicense</name>
+      <url>https://github.com/catap/swrng-provider/blob/master/LICENSE.txt</url>
+      <distribution>manual</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/catap/swrng-provider</url>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>com.github.purejavacomm</groupId>
@@ -33,6 +34,20 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <source>9</source>
+          <target>9</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <distributionManagement>
     <snapshotRepository>
