@@ -6,6 +6,11 @@ import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Implement the round robin algorithm between specified devices, and way to find devices at some supported OS.
+ *
+ * This implementation is based on USBSerialDevice.cpp v1.0
+ */
 public class SwiftRNGDevices {
     private final SwiftRNGDevice[] devices;
 

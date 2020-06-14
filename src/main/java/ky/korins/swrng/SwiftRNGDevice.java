@@ -8,9 +8,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Implement the interface between SwiftRNG devices and JVM.
+ *
+ * This interface uses {@link purejavacomm} as the way to communicate with a device.
+ *
+ * This implementation is based on swrngapi.cpp v1.2
+ */
 public class SwiftRNGDevice implements Closeable {
 
-    // constants are similar with swrngapi.cpp v1.2
     public static final int RANDOM_BYTES_CHUNK = 16000;
 
     private static final int READ_TIMEOUT_MILLIS = 100;

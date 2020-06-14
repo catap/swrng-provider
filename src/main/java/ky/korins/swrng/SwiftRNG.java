@@ -6,6 +6,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Implement the interface between SwiftRNG devices via <i>Service Provider Interface</i> (<b>SPI</b>)
+ * for the {@link SecureRandom} class.
+ *
+ * This interface try to use all available SwiftRNG devices if user hasn't got any preferences.
+ *
+ * This preferences can be specified via "securerandom.swiftrng.devices" value in java.security,
+ * or via {@link SwiftRNGParameters} parameters.
+ */
 public class SwiftRNG extends SecureRandomSpi {
 
     private SwiftRNGDevices devices;
